@@ -14,9 +14,10 @@ var sockets = [];
 var userList = [];
 
 var io = require('socket.io')(http);
+var port = process.env.port || 3000;
 
-http.listen(3000, function () {
-    console.log('listening on *:3000');
+http.listen(port, function () {
+    console.log('listening on *:' + port);
 });
 
 io.on('connection', function (socket) {
@@ -24,11 +25,11 @@ io.on('connection', function (socket) {
     var user = {
         id: uuid.v1(),
         x: 800 * Math.random(),
-        y: 600 * Math.random()
+        y: 500 * Math.random()
     };
     
     // Send connection information
-    socket.emit('connect', {
+    socket.emit('login', {
         id: user.id,
         x: user.x,
         y: user.y,
