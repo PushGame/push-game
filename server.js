@@ -76,6 +76,7 @@ function platformY(character) {
 }
 
 addPlatform(0, STAGE_HEIGHT, STAGE_WIDTH, STAGE_HEIGHT + 100);
+addPlatform(0, STAGE_HEIGHT - 100, STAGE_WIDTH / 2, STAGE_HEIGHT - 100 + 100);
 
 io.on('connection', function (socket) {
     // Create user information
