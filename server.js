@@ -4,6 +4,10 @@ var http = require('http').Server(app);
 var uuid = require('uuid');
 
 app.get('/', function (req, res) {
+    res.sendFile(__dirname + '/game/waiting.html');
+});
+
+app.get('/stage1', function (req, res) {
     res.sendFile(__dirname + '/game/game.html');
 });
 
