@@ -15,7 +15,7 @@ var facing = 'left';
 var cursors;
 var jumpButton;
 var bg;
-var fire
+var fire;
 
 var id;
 var userList = {};
@@ -24,7 +24,6 @@ function create() {
     socket = io();
     
     bg = game.add.tileSprite(0, 0, 800, 600, 'background');
-    fire = game.add.physicsGroup(Phaser.Physics.ARCADE);
 
         for (var i = 0; i < 5; i++)
         {
@@ -51,8 +50,6 @@ function create() {
         player.animations.add('turn', [4], 20, true);
         player.animations.add('right', [5, 6, 7, 8], 10, true);
 
-
-        
         cursors = game.input.keyboard.createCursorKeys();
         jumpButton = game.input.keyboard.addKey(Phaser.Keyboard.SPACEBAR);
 
@@ -92,8 +89,6 @@ function drawGuy(data) {
 }
 
 function update() {
-    game.physics.arcade.collide(fire);
-
     if (player) {
         if (cursors.left.isDown) {
             socket.emit('key', 'left');
@@ -127,7 +122,6 @@ function update() {
                 facing = 'idle';
             }
         }
-
         if (jumpButton.isDown) {
             socket.emit('jump');
         }
