@@ -13,106 +13,148 @@ var cursors;
 var jumpButton;
 var bg;
 
+var id;
+var x;
+var y;
+var userList = {};
+
 function create() {
     socket = io();
 
     game.physics.startSystem(Phaser.Physics.ARCADE);
 
-    bg = game.add.tileSprite(0, 0, 800, 600, 'background');
-
+     bg = game.add.tileSprite(0, 0, 800, 600, 'background');
     game.physics.arcade.gravity.y = 300;
 
-    player = game.add.sprite(32, 320, 'dude');
-    game.physics.enable(player, Phaser.Physics.ARCADE);
 
-    player.body.collideWorldBounds = true;
-    player.body.gravity.y = 1000;
-    player.body.maxVelocity.y = 500;
-    player.body.setSize(20, 32, 5, 16);
+    socket.on('login', function (data) {
+        id = data.id;
 
-    player.animations.add('left', [0, 1, 2, 3], 10, true);
-    player.animations.add('turn', [4], 20, true);
-    player.animations.add('right', [5, 6, 7, 8], 10, true);
+        var i;
+        for(i=0; i<data.userList.length; i++)
+            userList[data.userList[i].id] = drawGuy(data.userList[i]);
 
-    cursors = game.input.keyboard.createCursorKeys();
-    jumpButton = game.input.keyboard.addKey(Phaser.Keyboard.SPACEBAR);
-    
-    socket.on('new user', function () {
-        drawNewCircle();
+        player = game.add.sprite(data.x, data.y, 'dude');
+
+
+        game.physics.enable(player, Phaser.Physics.ARCADE);
+
+        player.body.collideWorldBounds = true;
+        player.body.gravity.y = 1000;
+        player.body.maxVelocity.y = 500;
+        player.body.setSize(20, 32, 5, 16);
+
+        player.animations.add('left', [0, 1, 2, 3], 10, true);
+        player.animations.add('turn', [4], 20, true);
+        player.animations.add('right', [5, 6, 7, 8], 10, true);
+
+        cursors = game.input.keyboard.createCursorKeys();
+        jumpButton = game.input.keyboard.addKey(Phaser.Keyboard.SPACEBAR);
+
     });
+
+
+    
+    socket.on('new user', function (data) {
+        userList[data.id] = drawGuy(data);
+    });
+
+    socket.on('move', function(data){
+        moveGuy(userList[data.id], data);
+    });
+
+    socket.on('logout', function(id){
+        userList[id].destroy(true);
+        delete userList[id];
+    })
+
+}
+
+function moveGuy(sprite, data){
+    sprite.position.x = data.x-5;
+    sprite.position.y = data.y-16;
+}
+
+function drawGuy(data){
+    var other = game.add.sprite(data.x-5, data.y-16, 'dude');
+
+
+    other.animations.add('left', [0, 1, 2, 3], 10, true);
+    other.animations.add('turn', [4], 20, true);
+    other.animations.add('right', [5, 6, 7, 8], 10, true);
+
+    return other;
 }
 
 function update() {
 
     // game.physics.arcade.collide(player, layer);
+    if(player){
 
-    player.body.velocity.x = 0;
+        socket.emit('move', getCoords());
 
-    if (cursors.left.isDown)
-    {
-        player.body.velocity.x = -150;
+        player.body.velocity.x = 0;
 
-        if (facing != 'left')
+        if (cursors.left.isDown)
         {
-            player.animations.play('left');
-            facing = 'left';
-        }
-    }
-    else if (cursors.right.isDown)
-    {
-        player.body.velocity.x = 150;
+            player.body.velocity.x = -150;
 
-        if (facing != 'right')
-        {
-            player.animations.play('right');
-            facing = 'right';
-        }
-    }
-    else
-    {
-        if (facing != 'idle')
-        {
-            player.animations.stop();
-
-            if (facing == 'left')
+            if (facing != 'left')
             {
-                player.frame = 0;
+                player.animations.play('left');
+                facing = 'left';
             }
-            else
-            {
-                player.frame = 5;
-            }
+        }
+        else if (cursors.right.isDown)
+        {
+            player.body.velocity.x = 150;
 
-            facing = 'idle';
+
+            if (facing != 'right')
+            {
+                player.animations.play('right');
+                facing = 'right';
+            }
+        }
+        else
+        {
+            if (facing != 'idle')
+            {
+                player.animations.stop();
+
+                if (facing == 'left')
+                {
+                    player.frame = 0;
+                }
+                else
+                {
+                    player.frame = 5;
+                }
+
+                facing = 'idle';
+            }
+        }
+        
+        if (jumpButton.isDown && player.body.onFloor() && game.time.now > jumpTimer)
+        {
+            player.body.velocity.y = -500;
+            jumpTimer = game.time.now + 750;
         }
     }
-    
-    if (jumpButton.isDown && player.body.onFloor() && game.time.now > jumpTimer)
-    {
-        player.body.velocity.y = -500;
-        jumpTimer = game.time.now + 750;
-    }
 
+}
+
+function getCoords() {
+    var coords = {x: player.body.x, y:player.body.y};
+    return coords;
 }
 
 function render () {
 
     // game.debug.text(game.time.physicsElapsed, 32, 32);
     // game.debug.body(player);
-    game.debug.bodyInfo(player, 16, 24);
-
-}
-function drawNewCircle() {
-	var other = game.add.sprite(32, 320, 'dude');
-	game.physics.enable(other, Phaser.Physics.ARCADE);
-
-	other.body.collideWorldBounds = true;
-    other.body.gravity.y = 1000;
-    other.body.maxVelocity.y = 500;
-    other.body.setSize(20, 32, 5, 16);
-
-    other.animations.add('left', [0, 1, 2, 3], 10, true);
-    other.animations.add('turn', [4], 20, true);
-    other.animations.add('right', [5, 6, 7, 8], 10, true);
+    if(player){
+        game.debug.bodyInfo(player, 16, 24);
+    }
 
 }
