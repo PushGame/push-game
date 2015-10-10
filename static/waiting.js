@@ -44,6 +44,12 @@ function create() {
 	stage3.body.immovable = true;
 	game.physics.arcade.enable(stage3);
 
+     // The player and its settings
+    player = game.add.sprite(32, game.world.height - 150, 'ping');
+
+    //  We need to enable physics on the player
+    game.physics.arcade.enable(player);
+
     socket.on('login', function (data) {
         id = data.id;
         
