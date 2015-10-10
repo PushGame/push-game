@@ -4,6 +4,8 @@ var game = new Phaser.Game(800, 600, Phaser.AUTO, '', { preload: preload, create
 function preload() {
     game.load.spritesheet('pong', 'static/assets/games/starstruck/pong.png', 32, 48);
     game.load.spritesheet('ping', 'static/assets/games/starstruck/ping.png', 32, 48);
+    game.load.spritesheet('king', 'static/assets/games/starstruck/king.png', 32, 48);
+    game.load.spritesheet('fire', 'static/assets/games/starstruck/fire.png', 48, 48);
     game.load.image('background', 'static/assets/games/starstruck/background4.png');
 }
 
@@ -13,6 +15,7 @@ var facing = 'left';
 var cursors;
 var jumpButton;
 var bg;
+var fire
 
 var id;
 var userList = {};
@@ -21,6 +24,19 @@ function create() {
     socket = io();
     
     bg = game.add.tileSprite(0, 0, 800, 600, 'background');
+    fire = game.add.physicsGroup(Phaser.Physics.ARCADE);
+
+        for (var i = 0; i < 5; i++)
+        {
+            var s = fire.create(game.rnd.integerInRange(100, 700), game.rnd.integerInRange(32, 200), 'fire');
+            s.animations.add('spin', [0, 1, 2, 3]);
+            s.play('spin', 10, true);
+            s.body.velocity.set(game.rnd.integerInRange(-200, 200), game.rnd.integerInRange(-200, 200));
+        }
+
+        fire.setAll('body.collideWorldBounds', true);
+        fire.setAll('body.bounce.x', 1);
+        fire.setAll('body.bounce.y', 1);
     
     socket.on('login', function (data) {
         id = data.id;
@@ -66,7 +82,7 @@ function moveGuy(sprite, data) {
 }
 
 function drawGuy(data) {
-    other = game.add.sprite(data.x, data.y, 'pong');
+    other = game.add.sprite(data.x - 5, data.y - 16, 'pong');
     
     other.animations.add('left', [0, 1, 2, 3], 10, true);
     other.animations.add('turn', [4], 20, true);
@@ -76,7 +92,8 @@ function drawGuy(data) {
 }
 
 function update() {
-    
+    game.physics.arcade.collide(fire);
+
     if (player) {
         if (cursors.left.isDown) {
             socket.emit('key', 'left');
