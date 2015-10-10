@@ -15,6 +15,11 @@ http.listen(3000, function () {
     console.log('listening on *:3000');
 });
 
+io.on('connection', function (socket) {
+    console.log('new user connected');
+    io.emit('new user');
+});
+
 /* 
  * Used for socket.io chat tutorial
  * 
