@@ -1,0 +1,14 @@
+{
+  "name": "pushgame",
+  "version": "0.0.0",
+  "description": "pushgame",
+  "main": "server.js",
+  "author": {
+    "name": "hackers",
+    "email": ""
+  },
+  "dependencies": {
+    "express": "^4.13.3",
+    "socket.io": "^1.3.7"
+  }
+}

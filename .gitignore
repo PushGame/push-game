@@ -1,0 +1,9 @@
+bin/*
+obj/*
+
+.ntvs_analysis.dat
+
+*.njsproj
+*.sln
+
+.vs/*
