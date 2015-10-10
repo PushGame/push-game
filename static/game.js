@@ -103,5 +103,16 @@ function render () {
 
 }
 function drawNewCircle() {
-	game.add.sprite(32, 320, 'dude');
+	var other = game.add.sprite(32, 320, 'dude');
+	game.physics.enable(other, Phaser.Physics.ARCADE);
+
+	other.body.collideWorldBounds = true;
+    other.body.gravity.y = 1000;
+    other.body.maxVelocity.y = 500;
+    other.body.setSize(20, 32, 5, 16);
+
+    other.animations.add('left', [0, 1, 2, 3], 10, true);
+    other.animations.add('turn', [4], 20, true);
+    other.animations.add('right', [5, 6, 7, 8], 10, true);
+
 }
