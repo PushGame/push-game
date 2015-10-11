@@ -1,4 +1,4 @@
-﻿'use strict';
+'use strict';
 
 var socket;
 var game = new Phaser.Game(800, 600, Phaser.AUTO, '', { preload: preload, create: create, update: update, render: render });
@@ -11,6 +11,10 @@ function preload() {
     game.load.image('background', 'static/assets/background4.png');
     game.load.image('star', 'static/assets/star.png');
     game.load.image('stage', 'static/assets/stageBlock.png');
+    game.load.audio('jump', 'static/assets/Audio/Jump.mp3');
+    game.load.audio('death', 'static/assets/Audio/death.wav');
+    game.load.audio('music','static/assets/Audio/music.mp3');
+    game.load.audio('levelcomplete','static/assets/Audio/levelcomplete.wav');
 }
 
 const CHAR_WIDTH = 32;
@@ -28,8 +32,17 @@ var objList = [];
 var label;
 var shrinking, stars;
 
+var jumpAudio;
+var deathAudio;
+var music;
+
 function create() {
+    jumpAudio = game.add.audio('jump');
+    deathAudio = game.add.audio('death');
+    music = game.add.audio('music');
+    
     socket = io();
+
     
     socket.on('world', function (worldType) {
         var i;
@@ -82,6 +95,7 @@ function create() {
         if (stars.length > arr.length) {
             for (i = arr.length; i < stars.length; i++) {
                 stars[i].destroy();
+                deathAudio.play();
             }
             for (i = stars.length - arr.length; i--;) {
                 stars.pop();
@@ -130,6 +144,9 @@ function create() {
     socket.on('logout', function (id) {
 
     });
+    
+
+    music.play();
 }
 
 function moveActor(data) {
@@ -187,6 +204,7 @@ function update() {
 
         if (jumpButton.isDown) {
             socket.emit('jump');
+            jumpAudio.play();
         }
     }
 }
