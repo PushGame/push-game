@@ -4,6 +4,10 @@ var socket;
 var game = new Phaser.Game(800, 600, Phaser.AUTO, '', { preload: preload, create: create, update: update, render: render });
 
 function preload() {
+    game.scale.pageAlignHorizontally = true;
+    game.scale.pageAlignVeritcally = true;
+    game.scale.refresh();
+
     game.load.spritesheet('pong', 'static/assets/pong.png', 32, 48);
     game.load.spritesheet('ping', 'static/assets/ping.png', 32, 48);
     game.load.spritesheet('king', 'static/assets/king.png', 32, 48);
@@ -27,14 +31,28 @@ var id;
 var userList = {};
 var objList = [];
 
-var label;
-var shrinking, stars;
+var back, mid, front;
+
+var bg, label;
+var shrinking, stars = [];
 
 function create() {
     socket = io();
+
+    back = game.add.group();
+    mid = game.add.group();
+    front = game.add.group();
+    
+    // Setup world
+    label = game.add.text(game.world.width * .5, 100, '');
+    label.anchor.x = 0.5;
+    front.add(label);
     
     socket.on('world', function (worldType) {
         var i;
+        for (i = 0; i < stars.length; i++) {
+            stars[i].destroy();
+        }
         for (i = 0; i < objList.length; i++) {
             try {
                 objList[i].destroy();
@@ -43,19 +61,20 @@ function create() {
         }
         objList = [];
         
-        // Setup world
-        label = game.add.text(game.world.width * .5, 100, '');
-        label.anchor.x = 0.5;
-        
         // Setup stage-specific
         var ground;
         if (worldType === 'waiting') {
-            objList.push(game.add.tileSprite(0, 0, 800, 600, 'b4'));
+            bg = game.add.tileSprite(0, 0, 800, 600, 'b4');
+            back.add(bg);
+            objList.push(bg);
         } else if (worldType === 'shrinking') {
-            objList.push(game.add.tileSprite(0, 0, 800, 600, 'bCheck'));
+            bg = game.add.tileSprite(0, 0, 800, 600, 'bCheck');
+            back.add(bg);
+            objList.push(bg);
 
             ground = game.add.tileSprite(0, 552, 800, 600, 'fire');
             objList.push(ground);
+            mid.add(ground);
             
             ground.animations.add('spin', [0, 1, 2, 3]);
             ground.play('spin', 10, true);
@@ -63,9 +82,13 @@ function create() {
             shrinking = game.add.image(game.world.width * .5, game.world.height - 120, 'stage');
             shrinking.anchor.x = 0.5;
             shrinking.scale.x = 2;
+            mid.add(shrinking);
             objList.push(shrinking);
         } else if (worldType === 'star') {
-            objList.push(game.add.tileSprite(0, 0, 800, 600, 'b2'));
+            bg = game.add.tileSprite(0, 0, 800, 600, 'b2');
+            back.add(bg);
+            objList.push(bg);
+
             stars = [];
         }
     });
@@ -83,7 +106,7 @@ function create() {
     });
     
     socket.on('star', function (arr) {
-        var i;
+        var i, star;
         if (stars.length > arr.length) {
             for (i = arr.length; i < stars.length; i++) {
                 stars[i].destroy();
@@ -93,7 +116,9 @@ function create() {
             }
         } else if (stars.length < arr.length) {
             for (i = arr.length - stars.length; i--;) {
-                stars.push(game.add.image(0, 0, 'star'));
+                star = game.add.image(0, 0, 'star');
+                mid.add(star);
+                stars.push(star);
             }
         }
 
@@ -146,6 +171,8 @@ function moveActor(data) {
 
 function createActor(data, sprite) {
     var actor = game.add.sprite(data.x, data.y, sprite);
+    mid.add(actor);
+
     actor.anchor.x = 0.5;
     actor.anchor.y = 0.5;
     
