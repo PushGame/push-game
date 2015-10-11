@@ -8,7 +8,9 @@ function preload() {
     game.load.spritesheet('ping', 'static/assets/ping.png', 32, 48);
     game.load.spritesheet('king', 'static/assets/king.png', 32, 48);
     game.load.spritesheet('fire', 'static/assets/fire.png', 48, 48);
-    game.load.image('background', 'static/assets/background4.png');
+    game.load.image('b2', 'static/assets/background2.png');
+    game.load.image('b4', 'static/assets/background4.png');
+    game.load.image('bCheck', 'static/assets/checker-floor.png');
     game.load.image('star', 'static/assets/star.png');
     game.load.image('stage', 'static/assets/stageBlock.png');
 }
@@ -42,14 +44,16 @@ function create() {
         objList = [];
         
         // Setup world
-        game.add.tileSprite(0, 0, 800, 600, 'background')
         label = game.add.text(game.world.width * .5, 100, '');
         label.anchor.x = 0.5;
         
         // Setup stage-specific
         var ground;
         if (worldType === 'waiting') {
+            objList.push(game.add.tileSprite(0, 0, 800, 600, 'b4'));
         } else if (worldType === 'shrinking') {
+            objList.push(game.add.tileSprite(0, 0, 800, 600, 'bCheck'));
+
             ground = game.add.tileSprite(0, 552, 800, 600, 'fire');
             objList.push(ground);
             
@@ -61,6 +65,7 @@ function create() {
             shrinking.scale.x = 2;
             objList.push(shrinking);
         } else if (worldType === 'star') {
+            objList.push(game.add.tileSprite(0, 0, 800, 600, 'b2'));
             stars = [];
         }
     });
