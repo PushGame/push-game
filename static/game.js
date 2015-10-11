@@ -1,4 +1,6 @@
-﻿var socket;
+﻿'use strict';
+
+var socket;
 var game = new Phaser.Game(800, 600, Phaser.AUTO, '', { preload: preload, create: create, update: update, render: render });
 
 function preload() {
@@ -24,61 +26,60 @@ function create() {
     
     bg = game.add.tileSprite(0, 0, 800, 600, 'background');
     
-    socket.on('login', function (data) {
-        id = data.id;
-        
+    socket.on('world', function (worldType) {
+
+    });
+    
+    socket.on('move', function (arr) {
         var i;
-        for (i = 0; i < data.userList.length; i++)
-            userList[data.userList[i].id] = drawGuy(data.userList[i]);
-        
-        player = game.add.sprite(data.x, data.y, 'ping');
-        
-        player.animations.add('left', [0, 1, 2, 3], 10, true);
-        player.animations.add('turn', [4], 20, true);
-        player.animations.add('right', [5, 6, 7, 8], 10, true);
+        for (i = 0; i < arr.length; i++) {
+            if (!userList[arr[i].id]) {
+                if (arr[i].id === socket.id) {
+                    userList[arr[i].id] = player = createActor(arr[i], 'ping');
 
-
-        
-        cursors = game.input.keyboard.createCursorKeys();
-        jumpButton = game.input.keyboard.addKey(Phaser.Keyboard.SPACEBAR);
-
-        userList[data.id] = player;
+                    cursors = game.input.keyboard.createCursorKeys();
+                    jumpButton = game.input.keyboard.addKey(Phaser.Keyboard.SPACEBAR);
+                } else {
+                    userList[arr[i].id] = createActor(arr[i], 'pong');
+                }
+            } else {
+                moveActor(arr[i]);
+            }
+        }
     });
     
-    socket.on('new user', function (data) {
-        userList[data.id] = drawGuy(data);
-    });
-    
-    socket.on('move', function (data) {
-        moveGuy(userList[data.id], data);
-    });
-    
-    socket.on('logout', function (id) {
+    socket.on('dead', function (id) {
         userList[id].destroy(true);
         delete userList[id];
-    })
+    });
 
+    socket.on('login', function (id) {
+
+    });
+
+    socket.on('logout', function (id) {
+
+    });
 }
 
-function moveGuy(sprite, data) {
-    if (sprite) {
-        sprite.x = data.x - CHAR_WIDTH * .5;
-        sprite.y = data.y - CHAR_HEIGHT * .5;
+function moveActor(data) {
+    if (userList[data.id]) {
+        userList[data.id].x = data.x - CHAR_WIDTH * .5;
+        userList[data.id].y = data.y - CHAR_HEIGHT * .5;
     }
 }
 
-function drawGuy(data) {
-    other = game.add.sprite(data.x, data.y, 'pong');
+function createActor(data, sprite) {
+    var actor = game.add.sprite(data.x - CHAR_WIDTH * .5, data.y - CHAR_HEIGHT * .5, sprite);
     
-    other.animations.add('left', [0, 1, 2, 3], 10, true);
-    other.animations.add('turn', [4], 20, true);
-    other.animations.add('right', [5, 6, 7, 8], 10, true);
+    actor.animations.add('left', [0, 1, 2, 3], 10, true);
+    actor.animations.add('turn', [4], 20, true);
+    actor.animations.add('right', [5, 6, 7, 8], 10, true);
     
-    return other;
+    return actor;
 }
 
 function update() {
-    
     if (player) {
         if (cursors.left.isDown) {
             socket.emit('key', 'left');
@@ -104,8 +105,7 @@ function update() {
                 
                 if (facing == 'left') {
                     player.frame = 0;
-                }
-                else {
+                } else {
                     player.frame = 5;
                 }
                 
