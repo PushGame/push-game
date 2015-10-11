@@ -5,7 +5,8 @@ function preload() {
     game.load.spritesheet('pong', 'static/assets/games/starstruck/pong.png', 32, 48);
     game.load.spritesheet('ping', 'static/assets/games/starstruck/ping.png', 32, 48);
     game.load.image('background', 'static/assets/games/starstruck/background4.png');
-    game.load.image('missile', 'static/assets/games/star.png', 24, 22);
+    game.load.image('missile', 'static/assets/star.png', 24, 22);
+    game.load.image('fireWalls', 'static/assets/firewall.png', 24, 600);
 }
 
 
@@ -18,12 +19,18 @@ var bg;
 var missiles;
 var missileTimer;
 
+var fireWalls;
+var hasInitializedWalls;
+
 var id;
 var userList = {};
 
 var currentDropChance;
 
 function create() {
+    game.physics.startSystem(Phaser.Physics.ARCADE);
+    
+    hasInitializedWalls = false;
     socket = io();
     currentDropChance = 98;
     bg = game.add.tileSprite(0, 0, 800, 600, 'background');
@@ -47,6 +54,7 @@ function create() {
         jumpButton = game.input.keyboard.addKey(Phaser.Keyboard.SPACEBAR);
 
         userList[data.id] = player;
+        game.physics.arcade.enable(player);
     });
     
     socket.on('new user', function (data) {
@@ -60,14 +68,18 @@ function create() {
     socket.on('logout', function (id) {
         userList[id].destroy(true);
         delete userList[id];
-    })
+    });
     
-    game.physics.startSystem(Phaser.Physics.ARCADE);
-    missiles = game.add.group();
-    missiles.enableBody = true;
+
+
+    missiles = game.add.physicsGroup();
     missiles.physicsBodyType = Phaser.Physics.ARCADE;
     
-    game.physics.arcade.collide(player, missiles, collisionHandler, null, this);
+    fireWalls = game.add.physicsGroup();
+    fireWalls.physicscBodyType = Phaser.Physics.ARCADE;
+    
+    game.physics.arcade.collide(player, missiles, collisionHandler, processHandler, this);
+    game.physics.arcade.collide(player, fireWalls, collisionHandler, processHandler, this);
 }
 
 function moveGuy(sprite, data) {
@@ -88,22 +100,9 @@ function drawGuy(data) {
 }
 
 function update() {
-    dropChance = game.rnd.between(0,100);
-    
-    if(dropChance >= currentDropChance)
-    {
-        if(currentDropChance > 75)
-        {
-            currentDropChance = currentDropChance - 0.25;
-        }
-        else if(currentDropChance > 50 && currentDropChance <= 75)
-        {
-            currentDropChance = currentDropChance - 0.1;
-        }
-        console.log(currentDropChance);
-        createMissile(game.rnd.between(0,800),game.rnd.between(80,300));
-    }
 
+    //handleMissiles();
+    handleFireWalls();
     if (player) {
         if (cursors.left.isDown) {
             socket.emit('key', 'left');
@@ -145,8 +144,38 @@ function update() {
     }
 }
 
-function collisionHandler (player, missiles) {
+function collisionHandler () {
     player.kill();
+}
+
+function processHandler (player, fireWalls) {
+
+    return true;
+
+}
+function processHandler (player, missiles) {
+
+    return true;
+
+}
+
+function handleMissiles()
+{
+    dropChance = game.rnd.between(0,100);
+    
+    if(dropChance >= currentDropChance)
+    {
+        if(currentDropChance > 75)
+        {
+            currentDropChance = currentDropChance - 0.25;
+        }
+        else if(currentDropChance > 50 && currentDropChance <= 75)
+        {
+            currentDropChance = currentDropChance - 0.1;
+        }
+        console.log(currentDropChance);
+        createMissile(game.rnd.between(0,800),game.rnd.between(80,300));
+    }
 }
 
 function createMissile(x, ySpeed)
@@ -155,6 +184,20 @@ function createMissile(x, ySpeed)
     newMissile = missiles.create(x,0,'missile');
     newMissile.body.setSize(40,52,0,0);
     newMissile.body.velocity.y = ySpeed;   
+}
+
+function handleFireWalls()
+{
+    if(!hasInitializedWalls){
+        var leftWall, rightWall;
+        leftWall = fireWalls.create(0,0,'fireWalls');
+        rightWall = fireWalls.create(800, 0, 'fireWalls');
+        leftWall.body.setSize(24,300,0,0);
+        rightWall.body.setSize(24,270,0,0);
+        leftWall.body.velocity.x = 50;
+        rightWall.body.velocity.x = -50;
+        hasInitializedWalls = true;
+    }
 }
 
 function render() {
