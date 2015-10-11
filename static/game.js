@@ -1,4 +1,4 @@
-'use strict';
+﻿'use strict';
 
 var socket;
 var game = new Phaser.Game(800, 600, Phaser.AUTO, '', { preload: preload, create: create, update: update, render: render });
@@ -17,14 +17,11 @@ function preload() {
     game.load.image('bCheck', 'static/assets/checker-floor.png');
     game.load.image('star', 'static/assets/star.png');
     game.load.image('stage', 'static/assets/stageBlock.png');
-<<<<<<< HEAD
     game.load.audio('jump', 'static/assets/Audio/Jump.mp3');
     game.load.audio('death', 'static/assets/Audio/death.wav');
     game.load.audio('music','static/assets/Audio/music.mp3');
     game.load.audio('levelcomplete','static/assets/Audio/levelcomplete.wav');
-=======
     game.load.image('rec1', 'static/assets/rec1.png');
->>>>>>> 7d1daa53d5e2609e069689d8885991c493e3c49b
 }
 
 const CHAR_WIDTH = 32;
@@ -55,8 +52,6 @@ function create() {
     
     socket = io();
 
-<<<<<<< HEAD
-=======
     back = game.add.group();
     mid = game.add.group();
     front = game.add.group();
@@ -65,7 +60,6 @@ function create() {
     label = game.add.text(game.world.width * .5, 100, '');
     label.anchor.x = 0.5;
     front.add(label);
->>>>>>> 7d1daa53d5e2609e069689d8885991c493e3c49b
     
     socket.on('world', function (worldType) {
         label.text = '';
