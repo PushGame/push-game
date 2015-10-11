@@ -37,8 +37,10 @@ module.exports = {
     destroyWorld: function (world) {
         if (platform) {
             world.DestroyBody(platform);
-            world.DestroyBody(hazard);
             platform = null;
+        }
+        if (hazard) {
+            world.DestroyBody(hazard);
             hazard = null;
         }
     },

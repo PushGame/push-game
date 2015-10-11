@@ -4,17 +4,27 @@ var socket;
 var game = new Phaser.Game(800, 600, Phaser.AUTO, '', { preload: preload, create: create, update: update, render: render });
 
 function preload() {
+    game.scale.pageAlignHorizontally = true;
+    game.scale.pageAlignVeritcally = true;
+    game.scale.refresh();
+
     game.load.spritesheet('pong', 'static/assets/pong.png', 32, 48);
     game.load.spritesheet('ping', 'static/assets/ping.png', 32, 48);
     game.load.spritesheet('king', 'static/assets/king.png', 32, 48);
     game.load.spritesheet('fire', 'static/assets/fire.png', 48, 48);
-    game.load.image('background', 'static/assets/background4.png');
+    game.load.image('b2', 'static/assets/background2.png');
+    game.load.image('b4', 'static/assets/background4.png');
+    game.load.image('bCheck', 'static/assets/checker-floor.png');
     game.load.image('star', 'static/assets/star.png');
     game.load.image('stage', 'static/assets/stageBlock.png');
+<<<<<<< HEAD
     game.load.audio('jump', 'static/assets/Audio/Jump.mp3');
     game.load.audio('death', 'static/assets/Audio/death.wav');
     game.load.audio('music','static/assets/Audio/music.mp3');
     game.load.audio('levelcomplete','static/assets/Audio/levelcomplete.wav');
+=======
+    game.load.image('rec1', 'static/assets/rec1.png');
+>>>>>>> 7d1daa53d5e2609e069689d8885991c493e3c49b
 }
 
 const CHAR_WIDTH = 32;
@@ -29,8 +39,10 @@ var id;
 var userList = {};
 var objList = [];
 
-var label;
-var shrinking, stars;
+var back, mid, front;
+
+var bg, label;
+var shrinking, stars = [];
 
 var jumpAudio;
 var deathAudio;
@@ -43,9 +55,25 @@ function create() {
     
     socket = io();
 
+<<<<<<< HEAD
+=======
+    back = game.add.group();
+    mid = game.add.group();
+    front = game.add.group();
+    
+    // Setup world
+    label = game.add.text(game.world.width * .5, 100, '');
+    label.anchor.x = 0.5;
+    front.add(label);
+>>>>>>> 7d1daa53d5e2609e069689d8885991c493e3c49b
     
     socket.on('world', function (worldType) {
+        label.text = '';
+
         var i;
+        for (i = 0; i < stars.length; i++) {
+            stars[i].destroy();
+        }
         for (i = 0; i < objList.length; i++) {
             try {
                 objList[i].destroy();
@@ -54,26 +82,34 @@ function create() {
         }
         objList = [];
         
-        // Setup world
-        game.add.tileSprite(0, 0, 800, 600, 'background')
-        label = game.add.text(game.world.width * .5, 100, '');
-        label.anchor.x = 0.5;
-        
         // Setup stage-specific
         var ground;
         if (worldType === 'waiting') {
+            bg = game.add.tileSprite(0, 0, 800, 600, 'b4');
+            back.add(bg);
+            objList.push(bg);
         } else if (worldType === 'shrinking') {
+            bg = game.add.tileSprite(0, 0, 800, 600, 'bCheck');
+            back.add(bg);
+            objList.push(bg);
+
             ground = game.add.tileSprite(0, 552, 800, 600, 'fire');
             objList.push(ground);
+            mid.add(ground);
             
             ground.animations.add('spin', [0, 1, 2, 3]);
             ground.play('spin', 10, true);
 
-            shrinking = game.add.image(game.world.width * .5, game.world.height - 120, 'stage');
+            shrinking = game.add.image(game.world.width * .5, game.world.height - 120, 'rec1');
             shrinking.anchor.x = 0.5;
-            shrinking.scale.x = 2;
+            shrinking.scale.x = 800 / 571;
+            mid.add(shrinking);
             objList.push(shrinking);
         } else if (worldType === 'star') {
+            bg = game.add.tileSprite(0, 0, 800, 600, 'b2');
+            back.add(bg);
+            objList.push(bg);
+
             stars = [];
         }
     });
@@ -87,11 +123,11 @@ function create() {
     });
     
     socket.on('shrinking', function (ratio) {
-        shrinking.scale.x = 2 * ratio;
+        shrinking.scale.x = 800 / 571 * ratio;
     });
     
     socket.on('star', function (arr) {
-        var i;
+        var i, star;
         if (stars.length > arr.length) {
             for (i = arr.length; i < stars.length; i++) {
                 stars[i].destroy();
@@ -102,7 +138,9 @@ function create() {
             }
         } else if (stars.length < arr.length) {
             for (i = arr.length - stars.length; i--;) {
-                stars.push(game.add.image(0, 0, 'star'));
+                star = game.add.image(0, 0, 'star');
+                mid.add(star);
+                stars.push(star);
             }
         }
 
@@ -158,6 +196,8 @@ function moveActor(data) {
 
 function createActor(data, sprite) {
     var actor = game.add.sprite(data.x, data.y, sprite);
+    mid.add(actor);
+
     actor.anchor.x = 0.5;
     actor.anchor.y = 0.5;
     
