@@ -18,6 +18,16 @@
 
     WORLD: {
         WAITING: 'waiting',
-        SHRINKING: 'shrinking'
+        SHRINKING: 'shrinking',
+        STAR: 'star',
+        survival: function (userList, userCount) {
+            var C = module.exports;
+            if (userCount == 1) {
+                C.enabled = false;
+                setTimeout(function () {
+                    C.nextWorld = C.WORLD.WAITING;
+                }, 3000);
+            }
+        }
     }
 };

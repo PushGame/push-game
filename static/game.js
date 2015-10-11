@@ -9,6 +9,7 @@ function preload() {
     game.load.spritesheet('king', 'static/assets/king.png', 32, 48);
     game.load.spritesheet('fire', 'static/assets/fire.png', 48, 48);
     game.load.image('background', 'static/assets/background4.png');
+    game.load.image('star', 'static/assets/star.png');
     game.load.image('stage', 'static/assets/stageBlock.png');
 }
 
@@ -25,7 +26,7 @@ var userList = {};
 var objList = [];
 
 var label;
-var shrinking;
+var shrinking, stars;
 
 function create() {
     socket = io();
@@ -59,6 +60,8 @@ function create() {
             shrinking.anchor.x = 0.5;
             shrinking.scale.x = 2;
             objList.push(shrinking);
+        } else if (worldType === 'star') {
+            stars = [];
         }
     });
     
@@ -72,6 +75,27 @@ function create() {
     
     socket.on('shrinking', function (ratio) {
         shrinking.scale.x = 2 * ratio;
+    });
+    
+    socket.on('star', function (arr) {
+        var i;
+        if (stars.length > arr.length) {
+            for (i = arr.length; i < stars.length; i++) {
+                stars[i].destroy();
+            }
+            for (i = stars.length - arr.length; i--;) {
+                stars.pop();
+            }
+        } else if (stars.length < arr.length) {
+            for (i = arr.length - stars.length; i--;) {
+                stars.push(game.add.image(0, 0, 'star'));
+            }
+        }
+
+        for (i = 0; i < arr.length; i++) {
+            stars[i].x = arr[i].x;
+            stars[i].y = arr[i].y;
+        }
     });
     
     socket.on('move', function (arr) {
@@ -110,13 +134,15 @@ function create() {
 
 function moveActor(data) {
     if (userList[data.id]) {
-        userList[data.id].x = data.x - CHAR_WIDTH * .5;
-        userList[data.id].y = data.y - CHAR_HEIGHT * .5;
+        userList[data.id].x = data.x;
+        userList[data.id].y = data.y;
     }
 }
 
 function createActor(data, sprite) {
-    var actor = game.add.sprite(data.x - CHAR_WIDTH * .5, data.y - CHAR_HEIGHT * .5, sprite);
+    var actor = game.add.sprite(data.x, data.y, sprite);
+    actor.anchor.x = 0.5;
+    actor.anchor.y = 0.5;
     
     actor.animations.add('left', [0, 1, 2, 3], 10, true);
     actor.animations.add('turn', [4], 20, true);

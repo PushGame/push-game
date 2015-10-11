@@ -11,6 +11,7 @@ var addRect = require('./game/addRect.js');
 var worlds = {};
 worlds[C.WORLD.WAITING] = require('./game/world/waiting.js');
 worlds[C.WORLD.SHRINKING] = require('./game/world/shrinking.js');
+worlds[C.WORLD.STAR] = require('./game/world/star.js');
 
 app.get('/', function (req, res) {
     res.sendFile(__dirname + '/game/game.html');
@@ -56,51 +57,6 @@ var updateInterval;
 var worldType;
 
 function initWorld() {
-    world = new b2d.b2World(worldAABB, gravity, doSleep);
-    
-    addRect(world, 0, C.STAGE_HEIGHT, C.STAGE_WIDTH, C.STAGE_HEIGHT + 100, 'platform');
-    addRect(world, -100, 0, 0, C.STAGE_HEIGHT, 'wall');
-    addRect(world, C.STAGE_WIDTH, 0, C.STAGE_WIDTH + 100, C.STAGE_HEIGHT, 'wall');
-    
-    // Foot Sensor manipulation
-    var worldContact = new b2d.b2ContactListener();
-    worldContact.Add = function (contact) {
-        var s1 = contact.shape1.GetUserData();
-        var s2 = contact.shape2.GetUserData();
-        if (s1.type === 'sensor' && s2.type !== 'wall') {
-            s1.user.footCount++;
-        }
-        if (s2.type === 'sensor' && s1.type !== 'wall') {
-            s2.user.footCount++;
-        }
-
-        //Handle Contact
-        if (s1.type === 'bullet' && s2.type === 'body') {
-            sockets[s2.user.id].user.deadFlag = true;
-        }
-        if (s1.type === 'body' && s2.type === 'bullet') {
-            sockets[s1.user.id].user.deadFlag = true;
-        }
-        
-        if (s1.type === 'star' && s2.type === 'platform') {
-            world.DestroyBody(s1.body);
-        }
-        if (s1.type === 'platform' && s2.type === 'star') {
-            world.DestroyBody(s2.body);
-        }
-    };
-    worldContact.Remove = function (contact) {
-        var s1 = contact.shape1.GetUserData();
-        var s2 = contact.shape2.GetUserData();
-        if (s1.type === 'sensor' && s2.type !== 'wall') {
-            s1.user.footCount--;
-        }
-        if (s2.type === 'sensor' && s1.type !== 'wall') {
-            s2.user.footCount--;
-        }
-    };
-    world.SetContactListener(worldContact);
-    
     //Initialize users
     var id;
     for (id in sockets) {
@@ -120,6 +76,9 @@ function initWorld() {
 }
 
 function destroyWorld() {
+    if (worlds[worldType].destroyWorld)
+        worlds[worldType].destroyWorld(world);
+
     //Destory active users
     var id;
     for (id in sockets) {
@@ -172,7 +131,7 @@ function updateWorld() {
         if (worlds[worldType].updateWorld)
             worlds[worldType].updateWorld(world, io);
         
-        world.Step(1.0 / C.FRAMERATE, 10);
+        world.Step(1.0 / C.FRAMERATE, 5);
         
         io.emit('move', makeUserList());
     }
@@ -248,6 +207,45 @@ function destroyUser(socket) {
 }
 
 worldType = C.WORLD.WAITING;
+
+world = new b2d.b2World(worldAABB, gravity, doSleep);
+
+addRect(world, 0, C.STAGE_HEIGHT, C.STAGE_WIDTH, C.STAGE_HEIGHT + 100, 'platform');
+addRect(world, -100, 0, 0, C.STAGE_HEIGHT, 'wall');
+addRect(world, C.STAGE_WIDTH, 0, C.STAGE_WIDTH + 100, C.STAGE_HEIGHT, 'wall');
+
+// Foot Sensor manipulation
+var worldContact = new b2d.b2ContactListener();
+worldContact.Add = function (contact) {
+    var s1 = contact.shape1.GetUserData();
+    var s2 = contact.shape2.GetUserData();
+    if (s1.type === 'sensor' && (s2.type === 'platform' || s2.type === 'body')) {
+        s1.user.footCount++;
+    }
+    if (s2.type === 'sensor' && (s1.type === 'platform' || s1.type === 'body')) {
+        s2.user.footCount++;
+    }
+    
+    //Handle Contact
+    if ((s1.type === 'bullet' || s1.type === 'star') && s2.type === 'body') {
+        sockets[s2.user.id].user.deadFlag = true;
+    }
+    if (s1.type === 'body' && (s2.type === 'bullet' || s2.type === 'star')) {
+        sockets[s1.user.id].user.deadFlag = true;
+    }
+};
+worldContact.Remove = function (contact) {
+    var s1 = contact.shape1.GetUserData();
+    var s2 = contact.shape2.GetUserData();
+    if (s1.type === 'sensor' && (s2.type === 'platform' || s2.type === 'body')) {
+        s1.user.footCount--;
+    }
+    if (s2.type === 'sensor' && (s1.type === 'platform' || s1.type === 'body')) {
+        s2.user.footCount--;
+    }
+};
+world.SetContactListener(worldContact);
+
 initWorld();
 
 io.on('connection', function (socket) {

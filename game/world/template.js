@@ -8,6 +8,9 @@ module.exports = {
     // Update world here(move platforms, change size)
     updateWorld: function (world, io) {
     },
+    // Destroy world
+    destroyWorld: function (world) {
+    },
     // When new user is added to the world
     onBorn: function (userList, userCount) {
     },

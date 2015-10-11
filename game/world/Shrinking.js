@@ -34,14 +34,15 @@ module.exports = {
             io.emit('shrinking', 0);
         }
     },
-    onDie: function (userList, userCount) {
-        if (userCount == 1) {
-            C.enabled = false;
-            setTimeout(function () {
-                C.nextWorld = C.WORLD.WAITING;
-            }, 3000);
+    destroyWorld: function (world) {
+        if (platform) {
+            world.DestroyBody(platform);
+            world.DestroyBody(hazard);
+            platform = null;
+            hazard = null;
         }
     },
+    onDie: C.WORLD.survival,
     spawn: function () {
         return new b2d.b2Vec2(
             C.STAGE_WIDTH * Math.random() / C.SCALING,
