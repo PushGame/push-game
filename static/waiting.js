@@ -19,6 +19,7 @@ var platforms;
 
 var id;
 var userList = {};
+var timer;
 
 function create() {
     socket = io();
@@ -31,18 +32,18 @@ function create() {
     //  We will enable physics for any object that is created in this group
     platforms.enableBody = true;
 
-	var stage = platforms.create(125, game.world.height-150, 'stage');
-	stage.scale.setTo(0.25,1);    
-	stage.body.immovable = true;
+    var stage = platforms.create(125, game.world.height-150, 'stage');
+    stage.scale.setTo(0.25,1);    
+    stage.body.immovable = true;
 
-	var stage2 = platforms.create(350, game.world.height-150, 'stage');
-	stage2.scale.setTo(0.25,1);    
-	stage2.body.immovable = true;
+    var stage2 = platforms.create(350, game.world.height-150, 'stage');
+    stage2.scale.setTo(0.25,1);    
+    stage2.body.immovable = true;
 
-	var stage3 = platforms.create(575, game.world.height-150, 'stage');
-	stage3.scale.setTo(0.25,1);    
-	stage3.body.immovable = true;
-	game.physics.arcade.enable(stage3);
+    var stage3 = platforms.create(575, game.world.height-150, 'stage');
+    stage3.scale.setTo(0.25,1);    
+    stage3.body.immovable = true;
+    game.physics.arcade.enable(stage3);
 
     socket.on('login', function (data) {
         id = data.id;
@@ -57,8 +58,8 @@ function create() {
         player.animations.add('turn', [4], 20, true);
         player.animations.add('right', [5, 6, 7, 8], 10, true);
 
-		game.physics.arcade.enable(player);
-		player.body.collideWorldBounds = true;
+        game.physics.arcade.enable(player);
+        player.body.collideWorldBounds = true;
 
         
         cursors = game.input.keyboard.createCursorKeys();
@@ -80,6 +81,14 @@ function create() {
         delete userList[id];
     })
 
+    //timer
+    timer = game.time.create(false);
+    timer.loop(10000, tenSecs, this);
+    timer.start();
+}
+
+function tenSecs(){
+    alert("tensecs!!");
 }
 
 function moveGuy(sprite, data) {
@@ -144,4 +153,5 @@ function update() {
 }
 
 function render() {
+    game.debug.text('Time until game starts: ' + timer.duration.toFixed(0), 32, 32);
 }
