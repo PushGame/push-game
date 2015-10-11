@@ -1,10 +1,11 @@
-﻿var socket;
+var socket;
 var game = new Phaser.Game(800, 600, Phaser.AUTO, '', { preload: preload, create: create, update: update, render: render });
 
 function preload() {
     game.load.spritesheet('pong', 'static/assets/games/starstruck/pong.png', 32, 48);
     game.load.spritesheet('ping', 'static/assets/games/starstruck/ping.png', 32, 48);
     game.load.image('background', 'static/assets/games/starstruck/background4.png');
+    game.load.image('missile', 'static/assets/games/star.png', 24, 22);
 }
 
 
@@ -14,12 +15,17 @@ var cursors;
 var jumpButton;
 var bg;
 
+var missiles;
+var missileTimer;
+
 var id;
 var userList = {};
 
+var currentDropChance;
+
 function create() {
     socket = io();
-    
+    currentDropChance = 98;
     bg = game.add.tileSprite(0, 0, 800, 600, 'background');
     
     socket.on('login', function (data) {
@@ -55,7 +61,13 @@ function create() {
         userList[id].destroy(true);
         delete userList[id];
     })
-
+    
+    game.physics.startSystem(Phaser.Physics.ARCADE);
+    missiles = game.add.group();
+    missiles.enableBody = true;
+    missiles.physicsBodyType = Phaser.Physics.ARCADE;
+    
+    game.physics.arcade.collide(player, missiles, collisionHandler, null, this);
 }
 
 function moveGuy(sprite, data) {
@@ -76,7 +88,22 @@ function drawGuy(data) {
 }
 
 function update() {
+    dropChance = game.rnd.between(0,100);
     
+    if(dropChance >= currentDropChance)
+    {
+        if(currentDropChance > 75)
+        {
+            currentDropChance = currentDropChance - 0.25;
+        }
+        else if(currentDropChance > 50 && currentDropChance <= 75)
+        {
+            currentDropChance = currentDropChance - 0.1;
+        }
+        console.log(currentDropChance);
+        createMissile(game.rnd.between(0,800),game.rnd.between(80,300));
+    }
+
     if (player) {
         if (cursors.left.isDown) {
             socket.emit('key', 'left');
@@ -114,7 +141,20 @@ function update() {
         if (jumpButton.isDown) {
             socket.emit('jump');
         }
+
     }
+}
+
+function collisionHandler (player, missiles) {
+    player.kill();
+}
+
+function createMissile(x, ySpeed)
+{
+    var newMissile;
+    newMissile = missiles.create(x,0,'missile');
+    newMissile.body.setSize(40,52,0,0);
+    newMissile.body.velocity.y = ySpeed;   
 }
 
 function render() {
