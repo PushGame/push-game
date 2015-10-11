@@ -16,6 +16,7 @@ var cursors;
 var jumpButton;
 var bg;
 var platforms;
+var countdown
 
 var id;
 var userList = {};
@@ -82,9 +83,11 @@ function create() {
     })
 
     //timer
-    timer = game.time.create(false);
-    timer.loop(10000, tenSecs, this);
-    timer.start();
+    socket.on('timer', function (data) {
+        countdown = data.countdown;
+    });
+
+    socket.emit('reset');
 }
 
 function tenSecs(){
@@ -153,5 +156,6 @@ function update() {
 }
 
 function render() {
-    game.debug.text('Time until game starts: ' + timer.duration.toFixed(0), 32, 32);
+    var div = document.getElementById("count");
+    div.innerHTML = countdown;
 }
