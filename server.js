@@ -41,23 +41,30 @@ const PLATFORM_OFFSET = 1;
 
 const CHAR_WIDTH = 32;
 const CHAR_HEIGHT = 48;
+const SCAILING = 30;
 
 const STAGE_WIDTH = 800;
 const STAGE_HEIGHT = 600;
 
-const JUMP_POWER = 200000;
-const GRAVITY = 100;
-const SPEED = 5000;
+const JUMP_POWER = 20;
+const GRAVITY = 15;
+const SPEED = 1;
+const MAX_SPEED = 10;
 
 var worldAABB = new b2d.b2AABB();
-worldAABB.lowerBound.Set(-STAGE_WIDTH, -STAGE_HEIGHT);
-worldAABB.upperBound.Set(STAGE_WIDTH*2, STAGE_HEIGHT*2);
+worldAABB.lowerBound.Set(-STAGE_WIDTH / SCAILING, -STAGE_HEIGHT / SCAILING);
+worldAABB.upperBound.Set(STAGE_WIDTH*2 / SCAILING, STAGE_HEIGHT*2 / SCAILING);
 
 var gravity = new b2d.b2Vec2(0, GRAVITY);
 var doSleep = true;
 var world = new b2d.b2World(worldAABB, gravity, doSleep);
 
 function addPlatform(sx, sy, ex, ey) {
+    sx /= SCAILING;
+    sy /= SCAILING;
+    ex /= SCAILING;
+    ey /= SCAILING;
+
     var box = new b2d.b2BodyDef();
     box.position.Set((sx + ex) * .5, (sy + ey) * .5);
 
@@ -106,12 +113,12 @@ io.on('connection', function (socket) {
     
     user.bodyDef = new b2d.b2BodyDef();
     user.bodyDef.fixedRotation = true;
-    user.bodyDef.position.Set(STAGE_WIDTH * Math.random(), (STAGE_HEIGHT - CHAR_HEIGHT) * Math.random());
+    user.bodyDef.position.Set(STAGE_WIDTH * Math.random() / SCAILING, (STAGE_HEIGHT - CHAR_HEIGHT) * Math.random() / SCAILING);
     
     user.body = world.CreateBody(user.bodyDef);
     
     user.shapeDef = new b2d.b2PolygonDef();
-    user.shapeDef.SetAsBox(CHAR_WIDTH*.5, CHAR_HEIGHT*.5);
+    user.shapeDef.SetAsBox(CHAR_WIDTH*.5 / SCAILING, CHAR_HEIGHT*.5 / SCAILING);
     user.shapeDef.density = 1.0;
     user.shapeDef.friction = 0;
     user.body.CreateShape(user.shapeDef);
@@ -119,9 +126,9 @@ io.on('connection', function (socket) {
     
     user.footSensor = new b2d.b2PolygonDef();
     user.footSensor.userData = user;
-    user.footSensor.SetAsBox(CHAR_WIDTH * .5, 1);
+    user.footSensor.SetAsBox(CHAR_WIDTH * .3 / SCAILING, 1 / SCAILING);
     for (i = 0; i < 4; i++) {
-        user.footSensor.vertices[i].y += CHAR_HEIGHT * .5;
+        user.footSensor.vertices[i].y += CHAR_HEIGHT * .5 / SCAILING;
     }
     user.footSensor.isSensor = true;
     user.body.CreateShape(user.footSensor);
@@ -129,15 +136,15 @@ io.on('connection', function (socket) {
     // Send connection information
     socket.emit('login', {
         id: user.id,
-        x: user.body.GetPosition().x,
-        y: user.body.GetPosition().y,
+        x: user.body.GetPosition().x * SCAILING,
+        y: user.body.GetPosition().y * SCAILING,
         userList: makeUserList()
     });
     
     socket.broadcast.emit('new user', {
         id: user.id,
-        x: user.body.GetPosition().x,
-        y: user.body.GetPosition().y
+        x: user.body.GetPosition().x * SCAILING,
+        y: user.body.GetPosition().y * SCAILING
     });
     
     socket.user = user;
@@ -171,19 +178,25 @@ io.on('connection', function (socket) {
 });
 
 setInterval(function () {
-    var i, user, impulse;
+    var i, user, impulse, prev;
     for (i = 0; i < userList.length; i++) {
         user = userList[i];
         if (user.key === 1) {
             impulse = -SPEED;
         } else if (user.key === 2) {
             impulse = SPEED;
-        } else if (user.key === 0) {
-            impulse = 0;
         }
-        user.body.ApplyImpulse(new b2d.b2Vec2(impulse, 0), user.body.GetWorldCenter());
         
-        if (user.tryJump && user.footCount > 0) {
+        if (user.key == 0) {
+            user.body.GetLinearVelocity().x *= 0.95;
+        } else {
+            prev = user.body.GetLinearVelocity().Copy();
+            user.body.ApplyImpulse(new b2d.b2Vec2(impulse, 0), user.body.GetWorldCenter());
+            if (user.body.GetLinearVelocity().x < -MAX_SPEED || MAX_SPEED < user.body.GetLinearVelocity().x)
+                user.body.SetLinearVelocity(prev);
+        }
+        
+        if (user.tryJump && user.footCount > 0 && user.body.GetLinearVelocity().y === 0) {
             user.body.ApplyImpulse(new b2d.b2Vec2(0, -JUMP_POWER), user.body.GetWorldCenter());
         }
         
@@ -194,25 +207,8 @@ setInterval(function () {
     for (i = 0; i < userList.length; i++) {
         io.emit('move', {
             id: userList[i].id,
-            x: userList[i].body.GetPosition().x,
-            y: userList[i].body.GetPosition().y
+            x: userList[i].body.GetPosition().x * SCAILING,
+            y: userList[i].body.GetPosition().y * SCAILING
         });
     }
 }, 1000 / FRAMERATE);
-
-/* 
- * Used for socket.io chat tutorial
- * 
-app.get('/', function (req, res) {
-    res.sendFile(__dirname + '/index.html');
-});
-io.on('connection', function (socket) {
-    console.log('a user connected');
-    socket.on('disconnect', function () {
-        console.log('a user disconnected');
-    });
-    socket.on('chat message', function (msg) {
-        io.emit('chat message', msg);
-    });
-});
-*/
