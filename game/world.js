@@ -6,7 +6,7 @@
     
     CHAR_WIDTH: 26,
     CHAR_HEIGHT: 48,
-    SCAILING: 30,
+    SCALING: 30,
     
     STAGE_WIDTH: 800,
     STAGE_HEIGHT: 600,

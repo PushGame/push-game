@@ -4,53 +4,57 @@
     <title>Phaser test</title>
     <link href='https://fonts.googleapis.com/css?family=Montserrat' rel='stylesheet' type='text/css'>
     <style media="screen" type="text/css">
-    .loading{
-    	position: absolute;
-    	background-color: #F9F0D1;
-		width:800px;
-		height:600px;
-		font-weight: bold;
-		font-size: 32px;
-		padding-top: 200px;
-		z-index: -5;
-    }
-    .loading.on{
-		z-index: 10;
-    }
-    .gameover{
-    	position: absolute;
-    	background-color: rgba(0,0,0,);
-		width:800px;
-		height:600px;
-		font-weight: bold;
-		font-size: 32px;
-		padding-top: 200px;
-		z-index: -5;
-    }
-    .gameover.on{
-    	z-index:10;
-    }
-    span{
-    	margin-left:40%;
-    	width:400px;
-    	height:200px;
-    }
-    img{
-    	width:200px;
-    	height:200px;
-    	margin-left: 35%;
-    }
+        .loading {
+            position: absolute;
+            background-color: #F9F0D1;
+            width: 800px;
+            height: 400px;
+            font-weight: bold;
+            font-size: 32px;
+            padding-top: 200px;
+            z-index: -5;
+        }
+
+            .loading.on {
+                z-index: 10;
+            }
+
+        .gameover {
+            position: absolute;
+            background-color: rgba(0,0,0,);
+            width: 800px;
+            height: 400px;
+            font-weight: bold;
+            font-size: 32px;
+            padding-top: 200px;
+            z-index: -5;
+        }
+
+            .gameover.on {
+                z-index: 10;
+            }
+
+        span {
+            margin-left: 40%;
+            width: 400px;
+            height: 200px;
+        }
+
+        img {
+            width: 200px;
+            height: 200px;
+            margin-left: 35%;
+        }
     </style>
 </head>
 <body>
-	<div class='loading'>
-		<img src="static/assets/character1.png">
-		<span>LOADING</span>
-	</div>
-	<div class="gameover"></div>
+    <div class='loading'>
+        <img src="static/assets/character1.png">
+        <span>LOADING</span>
+    </div>
+    <div class="gameover"></div>
     <script src="/socket.io/socket.io.js"></script>
     <script src="/static/js/phaser.min.js"></script>
     <script src="/static/game.js"></script>
 </body>
 </html>
-

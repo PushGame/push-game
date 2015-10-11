@@ -44,8 +44,8 @@ module.exports = {
     },
     spawn: function () {
         return new b2d.b2Vec2(
-            C.STAGE_WIDTH * Math.random() / C.SCAILING,
-            400 * Math.random() / C.SCAILING
+            C.STAGE_WIDTH * Math.random() / C.SCALING,
+            400 * Math.random() / C.SCALING
         );
     }
 };

@@ -36,8 +36,8 @@ function makeUserList() {
         user = userList[id];
         arr.push({
             id: user.id,
-            x: user.body.GetPosition().x * C.SCAILING,
-            y: user.body.GetPosition().y * C.SCAILING
+            x: user.body.GetPosition().x * C.SCALING,
+            y: user.body.GetPosition().y * C.SCALING
         });
     }
 
@@ -45,8 +45,8 @@ function makeUserList() {
 }
 
 var worldAABB = new b2d.b2AABB();
-worldAABB.lowerBound.Set(-C.STAGE_WIDTH / C.SCAILING, -C.STAGE_HEIGHT / C.SCAILING);
-worldAABB.upperBound.Set(C.STAGE_WIDTH*2 / C.SCAILING, C.STAGE_HEIGHT*2 / C.SCAILING);
+worldAABB.lowerBound.Set(-C.STAGE_WIDTH / C.SCALING, -C.STAGE_HEIGHT / C.SCALING);
+worldAABB.upperBound.Set(C.STAGE_WIDTH*2 / C.SCALING, C.STAGE_HEIGHT*2 / C.SCALING);
 
 var gravity = new b2d.b2Vec2(0, C.GRAVITY);
 var doSleep = true;
@@ -183,14 +183,14 @@ function createUser(id) {
         user.bodyDef.position = worlds[worldType].spawn();
     else
        user.bodyDef.position.Set(
-            C.STAGE_WIDTH * Math.random() / C.SCAILING,
-            (C.STAGE_HEIGHT - C.CHAR_HEIGHT) * Math.random() / C.SCAILING
+            C.STAGE_WIDTH * Math.random() / C.SCALING,
+            (C.STAGE_HEIGHT - C.CHAR_HEIGHT) * Math.random() / C.SCALING
         );
     
     user.body = world.CreateBody(user.bodyDef);
     
     user.shapeDef = new b2d.b2PolygonDef();
-    user.shapeDef.SetAsBox(C.CHAR_WIDTH * .5 / C.SCAILING, C.CHAR_HEIGHT * .5 / C.SCAILING);
+    user.shapeDef.SetAsBox(C.CHAR_WIDTH * .5 / C.SCALING, C.CHAR_HEIGHT * .5 / C.SCALING);
     user.shapeDef.density = 1.0;
     user.shapeDef.friction = 0;
     user.shapeDef.userData = {
@@ -205,9 +205,9 @@ function createUser(id) {
         type: 'sensor',
         user: user
     };
-    user.footSensor.SetAsBox(C.CHAR_WIDTH * .4 / C.SCAILING, 1 / C.SCAILING);
+    user.footSensor.SetAsBox(C.CHAR_WIDTH * .4 / C.SCALING, 1 / C.SCALING);
     for (i = 0; i < 4; i++) {
-        user.footSensor.vertices[i].y += C.CHAR_HEIGHT * .5 / C.SCAILING;
+        user.footSensor.vertices[i].y += C.CHAR_HEIGHT * .5 / C.SCALING;
     }
     user.footSensor.isSensor = true;
     user.body.CreateShape(user.footSensor);
