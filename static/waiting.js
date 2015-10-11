@@ -31,16 +31,16 @@ function create() {
     //  We will enable physics for any object that is created in this group
     platforms.enableBody = true;
 
-	var stage = platforms.create(50, game.world.height-150, 'stage');
-	stage.scale.setTo(0.5,1);    
+	var stage = platforms.create(125, game.world.height-150, 'stage');
+	stage.scale.setTo(0.25,1);    
 	stage.body.immovable = true;
 
-	var stage2 = platforms.create(300, game.world.height-150, 'stage');
-	stage2.scale.setTo(0.5,1);    
+	var stage2 = platforms.create(350, game.world.height-150, 'stage');
+	stage2.scale.setTo(0.25,1);    
 	stage2.body.immovable = true;
 
-	var stage3 = platforms.create(550, game.world.height-150, 'stage');
-	stage3.scale.setTo(0.5,1);    
+	var stage3 = platforms.create(575, game.world.height-150, 'stage');
+	stage3.scale.setTo(0.25,1);    
 	stage3.body.immovable = true;
 	game.physics.arcade.enable(stage3);
 

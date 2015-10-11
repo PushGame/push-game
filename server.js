@@ -76,9 +76,9 @@ function platformY(character) {
 }
 
 addPlatform(0, STAGE_HEIGHT, STAGE_WIDTH, STAGE_HEIGHT + 100);
-addPlatform(50, STAGE_HEIGHT - 150, 250, STAGE_HEIGHT - 150 + 100);
-addPlatform(300,STAGE_HEIGHT - 150, 500, STAGE_HEIGHT - 150 + 100);
-addPlatform(550,STAGE_HEIGHT - 150, 750, STAGE_HEIGHT - 150 + 100);
+addPlatform(125, STAGE_HEIGHT - 150, 225, STAGE_HEIGHT - 150 + 100);
+addPlatform(350,STAGE_HEIGHT - 150, 450, STAGE_HEIGHT - 150 + 100);
+addPlatform(575,STAGE_HEIGHT - 150, 675, STAGE_HEIGHT - 150 + 100);
 
 
 io.on('connection', function (socket) {
