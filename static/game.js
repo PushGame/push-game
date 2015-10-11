@@ -29,6 +29,7 @@ var currentDropChance;
 
 function create() {
     game.physics.startSystem(Phaser.Physics.ARCADE);
+
     
     hasInitializedWalls = false;
     socket = io();
@@ -54,7 +55,8 @@ function create() {
         jumpButton = game.input.keyboard.addKey(Phaser.Keyboard.SPACEBAR);
 
         userList[data.id] = player;
-        game.physics.arcade.enable(player);
+        game.physics.enable(player, Phaser.Physics.ARCADE);
+        player.body.setSize(20,32,0,0);
     });
     
     socket.on('new user', function (data) {
@@ -77,9 +79,6 @@ function create() {
     
     fireWalls = game.add.physicsGroup();
     fireWalls.physicscBodyType = Phaser.Physics.ARCADE;
-    
-    game.physics.arcade.collide(player, missiles, collisionHandler, processHandler, this);
-    game.physics.arcade.collide(player, fireWalls, collisionHandler, processHandler, this);
 }
 
 function moveGuy(sprite, data) {
@@ -101,8 +100,10 @@ function drawGuy(data) {
 
 function update() {
 
-    //handleMissiles();
-    handleFireWalls();
+    handleMissiles();
+    //handleFireWalls();
+
+    
     if (player) {
         if (cursors.left.isDown) {
             socket.emit('key', 'left');
@@ -144,7 +145,8 @@ function update() {
     }
 }
 
-function collisionHandler () {
+function killPlayer()
+{
     player.kill();
 }
 
@@ -161,6 +163,7 @@ function processHandler (player, missiles) {
 
 function handleMissiles()
 {
+    game.physics.arcade.collide(player, missiles, killPlayer);
     dropChance = game.rnd.between(0,100);
     
     if(dropChance >= currentDropChance)
@@ -188,12 +191,13 @@ function createMissile(x, ySpeed)
 
 function handleFireWalls()
 {
+    game.physics.arcade.collide(player, fireWalls, killPlayer);
     if(!hasInitializedWalls){
         var leftWall, rightWall;
         leftWall = fireWalls.create(0,0,'fireWalls');
-        rightWall = fireWalls.create(800, 0, 'fireWalls');
-        leftWall.body.setSize(24,300,0,0);
-        rightWall.body.setSize(24,270,0,0);
+        rightWall = fireWalls.create(780, 0, 'fireWalls');
+        leftWall.body.setSize(24,600,0,0);
+        rightWall.body.setSize(24,600,0,0);
         leftWall.body.velocity.x = 50;
         rightWall.body.velocity.x = -50;
         hasInitializedWalls = true;
