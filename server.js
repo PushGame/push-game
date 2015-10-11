@@ -76,17 +76,17 @@ function initWorld() {
 
         //Handle Contact
         if (s1.type === 'bullet' && s2.type === 'body') {
-            destroyUser(sockets[s2.user.id]);
+            sockets[s2.user.id].user.deadFlag = true;
         }
         if (s1.type === 'body' && s2.type === 'bullet') {
-            destroyUser(sockets[s1.user.id]);
+            sockets[s1.user.id].user.deadFlag = true;
         }
         
-        if (s1.type === 'bullet' && s2.type === 'platform') {
-            destroyUser(sockets[s2.user.id]);
+        if (s1.type === 'star' && s2.type === 'platform') {
+            world.DestroyBody(s1.body);
         }
-        if (s1.type === 'platform' && s2.type === 'bullet') {
-            destroyUser(sockets[s1.user.id]);
+        if (s1.type === 'platform' && s2.type === 'star') {
+            world.DestroyBody(s2.body);
         }
     };
     worldContact.Remove = function (contact) {
@@ -142,6 +142,11 @@ function updateWorld() {
         for (id in userList) {
             user = userList[id];
             
+            if (user.deadFlag) {
+                destroyUser(sockets[user.id]);
+                continue;
+            }
+            
             if (user.key === 1) {
                 impulse = -C.SPEED;
             } else if (user.key === 2) {
@@ -149,7 +154,7 @@ function updateWorld() {
             }
             
             if (user.key == 0) {
-                user.body.GetLinearVelocity().x *= 0.95;
+                user.body.GetLinearVelocity().x *= 0.94;
             } else {
                 prev = user.body.GetLinearVelocity().Copy();
                 user.body.ApplyImpulse(new b2d.b2Vec2(impulse, 0), user.body.GetWorldCenter());
@@ -181,7 +186,8 @@ function createUser(id) {
         id: id,
         key: 0,
         tryJump: false,
-        footCount: 0
+        footCount: 0,
+        deadFlag: false
     };
     
     user.bodyDef = new b2d.b2BodyDef();
