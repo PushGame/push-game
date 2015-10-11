@@ -39,18 +39,16 @@ function create() {
             }
         }
         objList = [];
-
-        //setup world
+        
+        // Setup world
+        game.add.tileSprite(0, 0, 800, 600, 'background')
+        label = game.add.text(game.world.width * .5, 100, '');
+        label.anchor.x = 0.5;
+        
+        // Setup stage-specific
         var ground;
         if (worldType === 'waiting') {
-            objList.push(game.add.tileSprite(0, 0, 800, 600, 'background'));
-
-            label = game.add.text(game.world.width * .5, 100, '');
-            objList.push(label);
-            label.anchor.x = 0.5;
         } else if (worldType === 'shrinking') {
-            objList.push(game.add.tileSprite(0, 0, 800, 600, 'background'));
-
             ground = game.add.tileSprite(0, 552, 800, 600, 'fire');
             objList.push(ground);
             

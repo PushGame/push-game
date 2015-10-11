@@ -59,18 +59,18 @@ function initWorld() {
     world = new b2d.b2World(worldAABB, gravity, doSleep);
     
     addRect(world, 0, C.STAGE_HEIGHT, C.STAGE_WIDTH, C.STAGE_HEIGHT + 100, 'platform');
-    addRect(world, -100, 0, 0, C.STAGE_HEIGHT, 'platform');
-    addRect(world, C.STAGE_WIDTH, 0, C.STAGE_WIDTH + 100, C.STAGE_HEIGHT, 'platform');
+    addRect(world, -100, 0, 0, C.STAGE_HEIGHT, 'wall');
+    addRect(world, C.STAGE_WIDTH, 0, C.STAGE_WIDTH + 100, C.STAGE_HEIGHT, 'wall');
     
     // Foot Sensor manipulation
     var worldContact = new b2d.b2ContactListener();
     worldContact.Add = function (contact) {
         var s1 = contact.shape1.GetUserData();
         var s2 = contact.shape2.GetUserData();
-        if (s1.type === 'sensor') {
+        if (s1.type === 'sensor' && s2.type !== 'wall') {
             s1.user.footCount++;
         }
-        if (s2.type === 'sensor') {
+        if (s2.type === 'sensor' && s1.type !== 'wall') {
             s2.user.footCount++;
         }
 
@@ -81,14 +81,21 @@ function initWorld() {
         if (s1.type === 'body' && s2.type === 'bullet') {
             destroyUser(sockets[s1.user.id]);
         }
+        
+        if (s1.type === 'bullet' && s2.type === 'platform') {
+            destroyUser(sockets[s2.user.id]);
+        }
+        if (s1.type === 'platform' && s2.type === 'bullet') {
+            destroyUser(sockets[s1.user.id]);
+        }
     };
     worldContact.Remove = function (contact) {
         var s1 = contact.shape1.GetUserData();
         var s2 = contact.shape2.GetUserData();
-        if (s1.type === 'sensor') {
+        if (s1.type === 'sensor' && s2.type !== 'wall') {
             s1.user.footCount--;
         }
-        if (s2.type === 'sensor') {
+        if (s2.type === 'sensor' && s1.type !== 'wall') {
             s2.user.footCount--;
         }
     };
@@ -205,7 +212,7 @@ function createUser(id) {
         type: 'sensor',
         user: user
     };
-    user.footSensor.SetAsBox(C.CHAR_WIDTH * .4 / C.SCALING, 1 / C.SCALING);
+    user.footSensor.SetAsBox(C.CHAR_WIDTH * .5 / C.SCALING, 1 / C.SCALING);
     for (i = 0; i < 4; i++) {
         user.footSensor.vertices[i].y += C.CHAR_HEIGHT * .5 / C.SCALING;
     }
