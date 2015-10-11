@@ -4,9 +4,9 @@ var socket;
 var game = new Phaser.Game(800, 600, Phaser.AUTO, '', { preload: preload, create: create, update: update, render: render });
 
 function preload() {
-    game.load.spritesheet('pong', 'static/assets/games/starstruck/pong.png', 32, 48);
-    game.load.spritesheet('ping', 'static/assets/games/starstruck/ping.png', 32, 48);
-    game.load.image('background', 'static/assets/games/starstruck/background4.png');
+    game.load.spritesheet('pong', 'static/assets/pong.png', 32, 48);
+    game.load.spritesheet('ping', 'static/assets/ping.png', 32, 48);
+    game.load.image('background', 'static/assets/background4.png');
 }
 
 const CHAR_WIDTH = 26;
