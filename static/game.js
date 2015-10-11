@@ -9,7 +9,7 @@ function preload() {
     game.load.image('background', 'static/assets/games/starstruck/background4.png');
 }
 
-const CHAR_WIDTH = 32;
+const CHAR_WIDTH = 26;
 const CHAR_HEIGHT = 48;
 
 var player;

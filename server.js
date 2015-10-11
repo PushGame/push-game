@@ -5,6 +5,10 @@ var app = express();
 var http = require('http').Server(app);
 var b2d = require('box2d');
 
+var C = require('./game/world.js');
+var addRect = require('./game/addRect.js');
+var worlds = [{}, require('./game/world/shrinking.js')];
+
 app.get('/', function (req, res) {
     res.sendFile(__dirname + '/game/game.html');
 });
@@ -28,34 +32,19 @@ function makeUserList() {
         user = userList[id];
         arr.push({
             id: user.id,
-            x: user.body.GetPosition().x * SCAILING,
-            y: user.body.GetPosition().y * SCAILING
+            x: user.body.GetPosition().x * C.SCAILING,
+            y: user.body.GetPosition().y * C.SCAILING
         });
     }
 
     return arr;
 }
 
-const FRAMERATE = 40;
-
-const CHAR_WIDTH = 26;
-const CHAR_HEIGHT = 48;
-const SCAILING = 30;
-
-const STAGE_WIDTH = 800;
-
-const STAGE_HEIGHT = 600;
-
-const JUMP_POWER = 20;
-const GRAVITY = 20;
-const SPEED = 1;
-const MAX_SPEED = 10;
-
 var worldAABB = new b2d.b2AABB();
-worldAABB.lowerBound.Set(-STAGE_WIDTH / SCAILING, -STAGE_HEIGHT / SCAILING);
-worldAABB.upperBound.Set(STAGE_WIDTH*2 / SCAILING, STAGE_HEIGHT*2 / SCAILING);
+worldAABB.lowerBound.Set(-C.STAGE_WIDTH / C.SCAILING, -C.STAGE_HEIGHT / C.SCAILING);
+worldAABB.upperBound.Set(C.STAGE_WIDTH*2 / C.SCAILING, C.STAGE_HEIGHT*2 / C.SCAILING);
 
-var gravity = new b2d.b2Vec2(0, GRAVITY);
+var gravity = new b2d.b2Vec2(0, C.GRAVITY);
 var doSleep = true;
 var world;
 var updateInterval;
@@ -65,30 +54,39 @@ var worldType;
 function initWorld() {
     world = new b2d.b2World(worldAABB, gravity, doSleep);
     
-    addPlatform(0, STAGE_HEIGHT, STAGE_WIDTH, STAGE_HEIGHT + 100);
-    addPlatform(-100, 0, 0, STAGE_HEIGHT);
-    addPlatform(STAGE_WIDTH, 0, STAGE_WIDTH + 100, STAGE_HEIGHT);
+    addRect(world, 0, C.STAGE_HEIGHT, C.STAGE_WIDTH, C.STAGE_HEIGHT + 100, 'platform');
+    addRect(world, -100, 0, 0, C.STAGE_HEIGHT, 'platform');
+    addRect(world, C.STAGE_WIDTH, 0, C.STAGE_WIDTH + 100, C.STAGE_HEIGHT, 'platform');
     
     // Foot Sensor manipulation
     var worldContact = new b2d.b2ContactListener();
     worldContact.Add = function (contact) {
-        if (contact.shape1.GetUserData()) {
-            contact.shape1.GetUserData().footCount++;
+        var s1 = contact.shape1.GetUserData();
+        var s2 = contact.shape2.GetUserData();
+        if (s1.type === 'sensor') {
+            s1.user.footCount++;
         }
-        if (contact.shape2.GetUserData()) {
-            contact.shape2.GetUserData().footCount++;
+        if (s2.type === 'sensor') {
+            s2.user.footCount++;
         }
 
-        //TODO handle contact
+        //Handle Contact
+        if (s1.type === 'bullet' && s2.type === 'body') {
+            destroyUser(sockets[s2.user.id]);
+        }
+        if (s1.type === 'body' && s2.type === 'bullet') {
+            destroyUser(sockets[s1.user.id]);
+        }
     };
     worldContact.Remove = function (contact) {
-        if (contact.shape1.GetUserData()) {
-            contact.shape1.GetUserData().footCount--;
+        var s1 = contact.shape1.GetUserData();
+        var s2 = contact.shape2.GetUserData();
+        if (s1.type === 'sensor') {
+            s1.user.footCount--;
         }
-        if (contact.shape2.GetUserData()) {
-            contact.shape2.GetUserData().footCount--;
+        if (s2.type === 'sensor') {
+            s2.user.footCount--;
         }
-
     };
     world.SetContactListener(worldContact);
     
@@ -103,9 +101,11 @@ function initWorld() {
     var data = makeUserList();
     io.emit('move', data);
 
-    //TODO World Customize with WorldType
+    //World Customize with WorldType
+    if (worlds[worldType].initWorld)
+        worlds[worldType].initWorld(world);
 
-    updateInterval = setInterval(updateWorld, 1000 / FRAMERATE);
+    updateInterval = setInterval(updateWorld, 1000 / C.FRAMERATE);
 }
 
 function destoryWorld() {
@@ -132,9 +132,9 @@ function updateWorld() {
         }
 
         if (user.key === 1) {
-            impulse = -SPEED;
+            impulse = -C.SPEED;
         } else if (user.key === 2) {
-            impulse = SPEED;
+            impulse = C.SPEED;
         }
             
         if (user.key == 0) {
@@ -142,36 +142,23 @@ function updateWorld() {
         } else {
             prev = user.body.GetLinearVelocity().Copy();
             user.body.ApplyImpulse(new b2d.b2Vec2(impulse, 0), user.body.GetWorldCenter());
-            if (user.body.GetLinearVelocity().x < -MAX_SPEED || MAX_SPEED < user.body.GetLinearVelocity().x)
+            if (user.body.GetLinearVelocity().x < -C.MAX_SPEED || C.MAX_SPEED < user.body.GetLinearVelocity().x)
                 user.body.SetLinearVelocity(prev);
         }
             
         if (user.tryJump && user.footCount > 0 && user.body.GetLinearVelocity().y === 0) {
-            user.body.ApplyImpulse(new b2d.b2Vec2(0, -JUMP_POWER), user.body.GetWorldCenter());
+            user.body.ApplyImpulse(new b2d.b2Vec2(0, -C.JUMP_POWER), user.body.GetWorldCenter());
         }
 
         user.tryJump = false;
     }
-    world.Step(1.0 / FRAMERATE, 10);
+    
+    if (worlds[worldType].updateWorld)
+        worlds[worldType].updateWorld(world);
+
+    world.Step(1.0 / C.FRAMERATE, 10);
         
     io.emit('move', makeUserList());
-}
-
-function addPlatform(sx, sy, ex, ey) {
-    sx /= SCAILING;
-    sy /= SCAILING;
-    ex /= SCAILING;
-    ey /= SCAILING;
-
-    var box = new b2d.b2BodyDef();
-    box.position.Set((sx + ex) * .5, (sy + ey) * .5);
-
-    var body = world.CreateBody(box);
-
-    var shape = new b2d.b2PolygonDef();
-    shape.SetAsBox((ex - sx)*.5, (ey - sy)*.5);
-
-    body.CreateShape(shape);
 }
 
 function createUser(id) {
@@ -188,23 +175,33 @@ function createUser(id) {
     
     user.bodyDef = new b2d.b2BodyDef();
     user.bodyDef.fixedRotation = true;
-    user.bodyDef.position.Set(STAGE_WIDTH * Math.random() / SCAILING, (STAGE_HEIGHT - CHAR_HEIGHT) * Math.random() / SCAILING);
+    user.bodyDef.position.Set(
+        C.STAGE_WIDTH * Math.random() / C.SCAILING,
+        (C.STAGE_HEIGHT - C.CHAR_HEIGHT) * Math.random() / C.SCAILING
+    );
     // TODO Change random distribution
     
     user.body = world.CreateBody(user.bodyDef);
     
     user.shapeDef = new b2d.b2PolygonDef();
-    user.shapeDef.SetAsBox(CHAR_WIDTH * .5 / SCAILING, CHAR_HEIGHT * .5 / SCAILING);
+    user.shapeDef.SetAsBox(C.CHAR_WIDTH * .5 / C.SCAILING, C.CHAR_HEIGHT * .5 / C.SCAILING);
     user.shapeDef.density = 1.0;
     user.shapeDef.friction = 0;
+    user.shapeDef.userData = {
+        type: 'body',
+        user: user
+    };
     user.body.CreateShape(user.shapeDef);
     user.body.SetMassFromShapes();
     
     user.footSensor = new b2d.b2PolygonDef();
-    user.footSensor.userData = user;
-    user.footSensor.SetAsBox(CHAR_WIDTH * .4 / SCAILING, 1 / SCAILING);
+    user.footSensor.userData = {
+        type: 'sensor',
+        user: user
+    };
+    user.footSensor.SetAsBox(C.CHAR_WIDTH * .4 / C.SCAILING, 1 / C.SCAILING);
     for (i = 0; i < 4; i++) {
-        user.footSensor.vertices[i].y += CHAR_HEIGHT * .5 / SCAILING;
+        user.footSensor.vertices[i].y += C.CHAR_HEIGHT * .5 / C.SCAILING;
     }
     user.footSensor.isSensor = true;
     user.body.CreateShape(user.footSensor);
