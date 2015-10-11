@@ -1,11 +1,12 @@
-var socket;
+﻿var socket;
 var game = new Phaser.Game(800, 600, Phaser.AUTO, '', { preload: preload, create: create, update: update, render: render });
 
 function preload() {
     game.load.spritesheet('pong', 'static/assets/games/starstruck/pong.png', 32, 48);
     game.load.spritesheet('ping', 'static/assets/games/starstruck/ping.png', 32, 48);
+    game.load.spritesheet('king', 'static/assets/games/starstruck/king.png', 32, 48);
+    game.load.spritesheet('fire', 'static/assets/games/starstruck/fire.png', 48, 48);
     game.load.image('background', 'static/assets/games/starstruck/background4.png');
-    game.load.image('missile', 'static/assets/games/star.png', 24, 22);
 }
 
 
@@ -14,19 +15,27 @@ var facing = 'left';
 var cursors;
 var jumpButton;
 var bg;
-
-var missiles;
-var missileTimer;
+var fire;
 
 var id;
 var userList = {};
 
-var currentDropChance;
-
 function create() {
     socket = io();
-    currentDropChance = 98;
+    
     bg = game.add.tileSprite(0, 0, 800, 600, 'background');
+
+        for (var i = 0; i < 5; i++)
+        {
+            var s = fire.create(game.rnd.integerInRange(100, 700), game.rnd.integerInRange(32, 200), 'fire');
+            s.animations.add('spin', [0, 1, 2, 3]);
+            s.play('spin', 10, true);
+            s.body.velocity.set(game.rnd.integerInRange(-200, 200), game.rnd.integerInRange(-200, 200));
+        }
+
+        fire.setAll('body.collideWorldBounds', true);
+        fire.setAll('body.bounce.x', 1);
+        fire.setAll('body.bounce.y', 1);
     
     socket.on('login', function (data) {
         id = data.id;
@@ -41,8 +50,6 @@ function create() {
         player.animations.add('turn', [4], 20, true);
         player.animations.add('right', [5, 6, 7, 8], 10, true);
 
-
-        
         cursors = game.input.keyboard.createCursorKeys();
         jumpButton = game.input.keyboard.addKey(Phaser.Keyboard.SPACEBAR);
 
@@ -61,13 +68,7 @@ function create() {
         userList[id].destroy(true);
         delete userList[id];
     })
-    
-    game.physics.startSystem(Phaser.Physics.ARCADE);
-    missiles = game.add.group();
-    missiles.enableBody = true;
-    missiles.physicsBodyType = Phaser.Physics.ARCADE;
-    
-    game.physics.arcade.collide(player, missiles, collisionHandler, null, this);
+
 }
 
 function moveGuy(sprite, data) {
@@ -78,7 +79,7 @@ function moveGuy(sprite, data) {
 }
 
 function drawGuy(data) {
-    other = game.add.sprite(data.x, data.y, 'pong');
+    other = game.add.sprite(data.x - 5, data.y - 16, 'pong');
     
     other.animations.add('left', [0, 1, 2, 3], 10, true);
     other.animations.add('turn', [4], 20, true);
@@ -88,22 +89,6 @@ function drawGuy(data) {
 }
 
 function update() {
-    dropChance = game.rnd.between(0,100);
-    
-    if(dropChance >= currentDropChance)
-    {
-        if(currentDropChance > 75)
-        {
-            currentDropChance = currentDropChance - 0.25;
-        }
-        else if(currentDropChance > 50 && currentDropChance <= 75)
-        {
-            currentDropChance = currentDropChance - 0.1;
-        }
-        console.log(currentDropChance);
-        createMissile(game.rnd.between(0,800),game.rnd.between(80,300));
-    }
-
     if (player) {
         if (cursors.left.isDown) {
             socket.emit('key', 'left');
@@ -137,24 +122,10 @@ function update() {
                 facing = 'idle';
             }
         }
-
         if (jumpButton.isDown) {
             socket.emit('jump');
         }
-
     }
-}
-
-function collisionHandler (player, missiles) {
-    player.kill();
-}
-
-function createMissile(x, ySpeed)
-{
-    var newMissile;
-    newMissile = missiles.create(x,0,'missile');
-    newMissile.body.setSize(40,52,0,0);
-    newMissile.body.velocity.y = ySpeed;   
 }
 
 function render() {

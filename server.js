@@ -4,8 +4,16 @@ var http = require('http').Server(app);
 var uuid = require('uuid');
 
 app.get('/', function (req, res) {
+    res.sendFile(__dirname + '/game/waiting.html');
+});
+
+app.get('/stage1', function (req, res) {
     res.sendFile(__dirname + '/game/game.html');
 });
+
+app.get('/stage2', function(req,res){
+    res.sendFile(__dirname +'/game/stage2.html');
+})
 
 // static serve everything under game directory
 app.use('/static', express.static(__dirname + '/static'));
@@ -44,6 +52,9 @@ function addPlatform(sx, sy, ex, ey) {
         ey: ey
     });
 }
+function popPlatform() {
+    platforms.pop();
+}
 
 function checkCollision(platform, character) {
     var x = character.x + CHAR_WIDTH / 2;
@@ -72,8 +83,33 @@ function platformY(character) {
 }
 
 addPlatform(0, STAGE_HEIGHT, STAGE_WIDTH, STAGE_HEIGHT + 100);
+//platform for waiting.js
+// addPlatform(125, STAGE_HEIGHT - 150, 225, STAGE_HEIGHT - 150 + 100);
+// addPlatform(350,STAGE_HEIGHT - 150, 450, STAGE_HEIGHT - 150 + 100);
+// addPlatform(575,STAGE_HEIGHT - 150, 675, STAGE_HEIGHT - 150 + 100);
+
+//platform for stage2.js
+var barX1 = 0;
+var barX2 = 800;
+addPlatform(barX1, STAGE_HEIGHT - 150, barX2, STAGE_HEIGHT - 150 + 100);
+
+var countdown = 6;  
+var timer = setInterval(function() {
+    countdown--;
+    if(countdown>-1){
+        barX1 +=5;
+        barX2 = barX1 + (countdown/30)*400;
+        popPlatform();
+        addPlatform(barX1, STAGE_HEIGHT - 150, barX2, STAGE_HEIGHT - 150 + 100);
+        io.sockets.emit('timer', { countdown: countdown });
+    }
+}, 1000);
 
 io.on('connection', function (socket) {
+    socket.on('reset', function (data) {
+        countdown = 6;
+        io.sockets.emit('timer', { countdown: countdown });
+    });
     // Create user information
     var user = {
         id: uuid.v1(),
@@ -83,7 +119,7 @@ io.on('connection', function (socket) {
         key: 0,
         tryJump: false
     };
-    
+   
     // Send connection information
     socket.emit('login', {
         id: user.id,
