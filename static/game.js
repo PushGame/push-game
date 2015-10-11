@@ -7,6 +7,8 @@ function preload() {
     game.load.image('background', 'static/assets/games/starstruck/background4.png');
 }
 
+const CHAR_WIDTH = 32;
+const CHAR_HEIGHT = 48;
 
 var player;
 var facing = 'left';
@@ -60,8 +62,8 @@ function create() {
 
 function moveGuy(sprite, data) {
     if (sprite) {
-        sprite.x = data.x;
-        sprite.y = data.y;
+        sprite.x = data.x - CHAR_WIDTH * .5;
+        sprite.y = data.y - CHAR_HEIGHT * .5;
     }
 }
 
