@@ -19,4 +19,6 @@ module.exports = function (world, sx, sy, ex, ey, type) {
     shape.SetAsBox((ex - sx) * .5, (ey - sy) * .5);
     
     body.CreateShape(shape);
+
+    return body;
 }

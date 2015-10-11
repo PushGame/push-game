@@ -7,7 +7,10 @@ var b2d = require('box2d');
 
 var C = require('./game/world.js');
 var addRect = require('./game/addRect.js');
-var worlds = [{}, require('./game/world/shrinking.js')];
+
+var worlds = {};
+worlds[C.WORLD.WAITING] = require('./game/world/waiting.js');
+worlds[C.WORLD.SHRINKING] = require('./game/world/shrinking.js');
 
 app.get('/', function (req, res) {
     res.sendFile(__dirname + '/game/game.html');
@@ -25,6 +28,7 @@ http.listen(port, function () {
 
 var sockets = {};
 var userList = {};
+var userCount = 0;
 
 function makeUserList() {
     var id, arr = [], user;
@@ -108,57 +112,58 @@ function initWorld() {
     updateInterval = setInterval(updateWorld, 1000 / C.FRAMERATE);
 }
 
-function destoryWorld() {
+function destroyWorld() {
     //Destory active users
     var id;
     for (id in sockets) {
-        if (sockets[id].user) {
-            destroyUser(sockets[id]);
-        }
+        destroyUser(sockets[id]);
     }
 
-    claerInterval(updateInterval);
+    clearInterval(updateInterval);
     updateInterval = null;
 }
 
 function updateWorld() {
-    var id, user, impulse, prev;
-    for (id in userList) {
-        user = userList[id];
+    if (C.nextWorld != null) {
+        destroyWorld();
+        worldType = C.nextWorld;
+        C.nextWorld = null;
+        C.enabled = true;
+        initWorld();
+    } else if (C.enabled) {
+        var id, user, impulse, prev;
+        for (id in userList) {
+            user = userList[id];
+            
+            if (user.key === 1) {
+                impulse = -C.SPEED;
+            } else if (user.key === 2) {
+                impulse = C.SPEED;
+            }
+            
+            if (user.key == 0) {
+                user.body.GetLinearVelocity().x *= 0.95;
+            } else {
+                prev = user.body.GetLinearVelocity().Copy();
+                user.body.ApplyImpulse(new b2d.b2Vec2(impulse, 0), user.body.GetWorldCenter());
+                if (user.body.GetLinearVelocity().x < -C.MAX_SPEED || C.MAX_SPEED < user.body.GetLinearVelocity().x)
+                    user.body.SetLinearVelocity(prev);
+            }
+            
+            if (user.tryJump && user.footCount > 0 && user.body.GetLinearVelocity().y === 0) {
+                user.body.ApplyImpulse(new b2d.b2Vec2(0, -C.JUMP_POWER), user.body.GetWorldCenter());
+            }
+            
+            user.tryJump = false;
+        }
         
-        if (user.deadFlag) {
-            destroyUser(sockets[id]);
-            continue;
-        }
-
-        if (user.key === 1) {
-            impulse = -C.SPEED;
-        } else if (user.key === 2) {
-            impulse = C.SPEED;
-        }
-            
-        if (user.key == 0) {
-            user.body.GetLinearVelocity().x *= 0.95;
-        } else {
-            prev = user.body.GetLinearVelocity().Copy();
-            user.body.ApplyImpulse(new b2d.b2Vec2(impulse, 0), user.body.GetWorldCenter());
-            if (user.body.GetLinearVelocity().x < -C.MAX_SPEED || C.MAX_SPEED < user.body.GetLinearVelocity().x)
-                user.body.SetLinearVelocity(prev);
-        }
-            
-        if (user.tryJump && user.footCount > 0 && user.body.GetLinearVelocity().y === 0) {
-            user.body.ApplyImpulse(new b2d.b2Vec2(0, -C.JUMP_POWER), user.body.GetWorldCenter());
-        }
-
-        user.tryJump = false;
+        if (worlds[worldType].updateWorld)
+            worlds[worldType].updateWorld(world, io);
+        
+        world.Step(1.0 / C.FRAMERATE, 10);
+        
+        io.emit('move', makeUserList());
     }
-    
-    if (worlds[worldType].updateWorld)
-        worlds[worldType].updateWorld(world);
-
-    world.Step(1.0 / C.FRAMERATE, 10);
-        
-    io.emit('move', makeUserList());
 }
 
 function createUser(id) {
@@ -169,17 +174,18 @@ function createUser(id) {
         id: id,
         key: 0,
         tryJump: false,
-        footCount: 0,
-        deadFlag: false
+        footCount: 0
     };
     
     user.bodyDef = new b2d.b2BodyDef();
     user.bodyDef.fixedRotation = true;
-    user.bodyDef.position.Set(
-        C.STAGE_WIDTH * Math.random() / C.SCAILING,
-        (C.STAGE_HEIGHT - C.CHAR_HEIGHT) * Math.random() / C.SCAILING
-    );
-    // TODO Change random distribution
+    if (worlds[worldType].spawn)
+        user.bodyDef.position = worlds[worldType].spawn();
+    else
+       user.bodyDef.position.Set(
+            C.STAGE_WIDTH * Math.random() / C.SCAILING,
+            (C.STAGE_HEIGHT - C.CHAR_HEIGHT) * Math.random() / C.SCAILING
+        );
     
     user.body = world.CreateBody(user.bodyDef);
     
@@ -207,39 +213,50 @@ function createUser(id) {
     user.body.CreateShape(user.footSensor);
 
     userList[user.id] = user;
+    
+    userCount++;
+    if (worlds[worldType].onBorn)
+        worlds[worldType].onBorn(userList, userCount);
 
     return user;
 }
 
 function destroyUser(socket) {
-    io.emit('dead', socket.id);
-    world.DestroyBody(socket.user.body);
-    socket.user = null;
-    delete userList[socket.id];
+    if (socket.user) {
+        io.emit('dead', socket.id);
+        world.DestroyBody(socket.user.body);
+        socket.user = null;
+        delete userList[socket.id];
+        
+        userCount--;
+        if (worlds[worldType].onDie)
+            worlds[worldType].onDie(userList, userCount);
+    }
 }
 
-worldType = 0;
+worldType = C.WORLD.WAITING;
 initWorld();
 
 io.on('connection', function (socket) {
+    socket.emit('world', worldType);
     socket.broadcast.emit('login', socket.id);
 
     sockets[socket.id] = socket;
 
-    if (worldType == 0) {
+    if (worldType === C.WORLD.WAITING) {
         // Waitroom, join right away
         socket.user = createUser(socket.id);
-    } else {
-        // Added to waitlist, wait for next game
     }
+    // Ohterwise added to waitlist, wait for next game
     
     socket.on('disconnect', function () {
-        if (socket.user) {
-            destroyUser(socket);
-        }
+        destroyUser(socket);
         
         socket.broadcast.emit('logout', socket.id);
         delete sockets[socket.id];
+        
+        if (worlds[worldType].onDisconnect)
+            worlds[worldType].onDisconnect(sockets);
     });
     
     socket.on('key', function (key) {

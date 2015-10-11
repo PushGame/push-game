@@ -6,28 +6,74 @@ var game = new Phaser.Game(800, 600, Phaser.AUTO, '', { preload: preload, create
 function preload() {
     game.load.spritesheet('pong', 'static/assets/pong.png', 32, 48);
     game.load.spritesheet('ping', 'static/assets/ping.png', 32, 48);
+    game.load.spritesheet('king', 'static/assets/king.png', 32, 48);
+    game.load.spritesheet('fire', 'static/assets/fire.png', 48, 48);
     game.load.image('background', 'static/assets/background4.png');
+    game.load.image('stage', 'static/assets/stageBlock.png');
 }
 
-const CHAR_WIDTH = 26;
+const CHAR_WIDTH = 32;
 const CHAR_HEIGHT = 48;
 
 var player;
 var facing = 'left';
 var cursors;
 var jumpButton;
-var bg;
 
 var id;
 var userList = {};
+var objList = [];
+
+var label;
+var shrinking;
 
 function create() {
     socket = io();
     
-    bg = game.add.tileSprite(0, 0, 800, 600, 'background');
-    
     socket.on('world', function (worldType) {
+        var i;
+        for (i = 0; i < objList.length; i++) {
+            try {
+                objList[i].destroy();
+            } catch (error) {
+            }
+        }
+        objList = [];
 
+        //setup world
+        var ground;
+        if (worldType === 'waiting') {
+            objList.push(game.add.tileSprite(0, 0, 800, 600, 'background'));
+
+            label = game.add.text(game.world.width * .5, 100, '');
+            objList.push(label);
+            label.anchor.x = 0.5;
+        } else if (worldType === 'shrinking') {
+            objList.push(game.add.tileSprite(0, 0, 800, 600, 'background'));
+
+            ground = game.add.tileSprite(0, 552, 800, 600, 'fire');
+            objList.push(ground);
+            
+            ground.animations.add('spin', [0, 1, 2, 3]);
+            ground.play('spin', 10, true);
+
+            shrinking = game.add.image(game.world.width * .5, game.world.height - 120, 'stage');
+            shrinking.anchor.x = 0.5;
+            shrinking.scale.x = 2;
+            objList.push(shrinking);
+        }
+    });
+    
+    socket.on('waiting countdown', function (second) {
+        if (second === -1) {
+            label.text = 'Waiting for other players';
+        } else {
+            label.text = '- ' + second + ' -';
+        }
+    });
+    
+    socket.on('shrinking', function (ratio) {
+        shrinking.scale.x = 2 * ratio;
     });
     
     socket.on('move', function (arr) {
@@ -49,8 +95,10 @@ function create() {
     });
     
     socket.on('dead', function (id) {
-        userList[id].destroy(true);
-        delete userList[id];
+        if (userList[id]) {
+            userList[id].destroy();
+            delete userList[id];
+        }
     });
 
     socket.on('login', function (id) {
