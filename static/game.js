@@ -17,6 +17,7 @@ function preload() {
     game.load.image('bCheck', 'static/assets/checker-floor.png');
     game.load.image('star', 'static/assets/star.png');
     game.load.image('stage', 'static/assets/stageBlock.png');
+    game.load.image('rec1', 'static/assets/rec1.png');
 }
 
 const CHAR_WIDTH = 32;
@@ -49,6 +50,8 @@ function create() {
     front.add(label);
     
     socket.on('world', function (worldType) {
+        label.text = '';
+
         var i;
         for (i = 0; i < stars.length; i++) {
             stars[i].destroy();
@@ -79,9 +82,9 @@ function create() {
             ground.animations.add('spin', [0, 1, 2, 3]);
             ground.play('spin', 10, true);
 
-            shrinking = game.add.image(game.world.width * .5, game.world.height - 120, 'stage');
+            shrinking = game.add.image(game.world.width * .5, game.world.height - 120, 'rec1');
             shrinking.anchor.x = 0.5;
-            shrinking.scale.x = 2;
+            shrinking.scale.x = 800 / 571;
             mid.add(shrinking);
             objList.push(shrinking);
         } else if (worldType === 'star') {
@@ -102,7 +105,7 @@ function create() {
     });
     
     socket.on('shrinking', function (ratio) {
-        shrinking.scale.x = 2 * ratio;
+        shrinking.scale.x = 800 / 571 * ratio;
     });
     
     socket.on('star', function (arr) {
