@@ -2,7 +2,7 @@
     nextWorld: null,
     enabled: true,
 
-    FRAMERATE: 20,
+    FRAMERATE: 40,
     
     CHAR_WIDTH: 26,
     CHAR_HEIGHT: 48,

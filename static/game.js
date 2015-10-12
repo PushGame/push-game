@@ -170,15 +170,12 @@ function create() {
     });
 
     socket.on('login', function (id) {
-
     });
 
     socket.on('logout', function (id) {
-
     });
     
-
-    music.play();
+    music.loopFull();
 }
 
 function moveActor(data) {
